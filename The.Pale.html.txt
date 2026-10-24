@@ -1,0 +1,652 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pale - 普丽姆罗丝</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { height:100%; background:#08080a; }
+  body {
+    height:100%; font-family: "Times New Roman", "Songti SC", "Noto Serif SC", "SimSun", serif;
+    color:#cfccd6; overflow:hidden; transition:background 1.5s ease;
+    -webkit-tap-highlight-color:transparent; letter-spacing: 1px; position:relative;
+  }
+  body.dream { background:linear-gradient(160deg,#15161d,#0b0c10); }
+  body.real  { background:linear-gradient(160deg,#1b1713,#0d0b09); }
+  body.fire  { background:linear-gradient(160deg,#2a100e,#0d0706); }
+  body.apartment { background:linear-gradient(160deg,#141418,#09090c); }
+
+  #status-tag {
+    position: fixed; top: 15px; left: 15px;
+    font-size: 11px; color: #8a859e; font-family: sans-serif;
+    letter-spacing: 1px; z-index: 10; padding: 4px 10px;
+    border: 1px solid rgba(138,133,158,0.3); border-radius: 3px;
+    background: rgba(0,0,0,0.5); transition: opacity 0.5s;
+  }
+
+  /* 封面 */
+  #title {
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; background:#08080b;
+    z-index:100; transition:opacity 1.5s ease; padding:20px;
+  }
+  #title.hidden { opacity:0; pointer-events:none; }
+  #title h1 { font-size:48px; letter-spacing:8px; color:#e6e2ef; margin-bottom:10px; font-family: "Times New Roman", serif; text-shadow: 0 0 20px rgba(230,226,239,0.2); }
+  #title .sub { font-size:12px; letter-spacing:6px; color:#6a6580; margin-bottom:40px; font-family: sans-serif; }
+  #title .quote { font-size:14px; color:#8a859e; letter-spacing:2px; line-height:2.4; text-align:center; font-style: italic; margin-bottom:30px;}
+
+  .title-btn { background:transparent; border:1px solid #3a3846; color:#9a97a8; padding:12px 40px; margin:8px; letter-spacing:6px; text-indent:6px; cursor:pointer; transition:all .4s; font-family:inherit; font-size:14px;}
+  .title-btn:hover { border-color:#8a859e; color:#fff; background:rgba(138,133,158,0.1); }
+
+  #tap-hint {
+    position: fixed; inset: 0; z-index: 150;
+    display: flex; flex-direction:column;
+    align-items: center; justify-content: center;
+    gap:60px;
+    background: #060608; color: #6a6580;
+    font-family: sans-serif; font-size: 14px; letter-spacing: 4px;
+    cursor: pointer; transition: opacity 1.2s ease;
+  }
+  #tap-hint.hidden { opacity: 0; pointer-events: none; }
+  #tap-hint .pulse { animation: pulse 2.2s ease-in-out infinite; }
+  #tap-hint .foreshadow{
+    font-style:italic;
+    max-width:480px;
+    text-align:center;
+    line-height:2.2;
+    color:#746f88;
+    font-size:15px;
+  }
+  @keyframes pulse { 0%,100%{opacity:.35;} 50%{opacity:1;} }
+
+  #game { display:none; flex-direction:column; height:100%; max-width:700px; margin:0 auto; padding:40px 24px 20px; position:relative; z-index:2;}
+  #game.active { display:flex; }
+
+  #hud { display:flex; align-items:center; justify-content: flex-end; gap:24px; font-size:11px; color:#5e5c6a; letter-spacing:2px; padding-bottom:10px; flex-shrink:0; font-family: sans-serif; }
+  .hud-item { cursor:pointer; text-decoration:underline; }
+
+  #text-area { flex:1; overflow-y:auto; padding:20px 5px 30px 0; scrollbar-width:thin; }
+  #text-area::-webkit-scrollbar { width:2px; }
+  #text-area::-webkit-scrollbar-thumb { background:#3a3846; }
+  #text-area p { font-size:17px; line-height:2.2; margin-bottom:1.4em; color:#c9c6d1; opacity:0; animation:fadeUp 1.2s ease forwards; }
+  #text-area p:first-child { font-size:18px; color:#ebe8f0; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(15px);} to{opacity:1;transform:translateY(0);} }
+
+  .file-card {
+    background: rgba(30, 28, 38, 0.6); border: 1px solid #4a4559; padding: 20px;
+    margin: 15px 0; border-radius: 4px; font-family: "Courier New", Courier, monospace;
+    font-size: 14px; line-height: 1.8; color: #a6a3b5;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); opacity: 0; animation: fadeUp 1.2s ease forwards;
+  }
+  .file-card h3 { color: #e6e2ef; font-size: 16px; margin-bottom: 10px; letter-spacing: 2px; border-bottom: 1px solid #4a4559; padding-bottom: 8px; }
+  .file-card .highlight { color: #d87070; font-style: italic; }
+  .file-card .secret-note{color:#8278a3;}
+
+  .chat-card {
+    background: rgba(22, 21, 28, 0.85); border: 1px solid #3a3846; border-radius: 10px;
+    padding: 16px 14px; margin: 15px 0; font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px; line-height: 1.7; color: #b8b5c4;
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.55); opacity: 0; animation: fadeUp 1.2s ease forwards;
+  }
+  .chat-card .chat-title { font-size:12px; color:#6a6580; letter-spacing:1px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2a2934; text-align:center; }
+  .chat-card .msg { display:flex; margin-bottom: 12px; }
+  .chat-card .msg.me { justify-content: flex-end; }
+  .chat-card .msg .bubble { max-width: 78%; padding: 9px 13px; border-radius: 12px; position: relative; font-size: 14px; line-height: 1.65; word-break: break-word; }
+  .chat-card .msg.me .bubble { background: #2c3a4a; color: #d6d3e0; border-bottom-right-radius: 3px; }
+  .chat-card .msg.dr .bubble { background: #2a2733; color: #c9c6d1; border-bottom-left-radius: 3px; }
+  .chat-card .msg .name { font-size: 10px; color: #5e5c6a; margin-bottom: 4px; letter-spacing: 1px; }
+  .chat-card .msg.me .name { text-align: right; }
+  .chat-card .msg .wrap { display:flex; flex-direction:column; }
+  .chat-card .time { text-align:center; font-size: 10px; color: #4a4559; margin: 10px 0; letter-spacing:1px; }
+  .chat-card .sys { text-align:center; font-size: 11px; color: #6a6580; margin: 12px 0; letter-spacing: 1px; }
+
+  #choices { display:flex; flex-direction:column; gap:12px; padding-top:15px; flex-shrink:0; }
+  .choice { background:transparent; border:1px solid #302f3a; color:#a6a3b5; font-size:15px; padding:15px 22px; text-align:left; cursor:pointer; transition:all .4s ease; line-height:1.6; }
+  .choice:hover, .choice:active { border-color:#8a859e; color:#fff; background:rgba(138,133,158,0.08); padding-left:30px; }
+
+  #history-panel { position:fixed; inset:0; background:rgba(8,8,10,0.98); z-index:200; display:none; flex-direction:column; padding:40px 20px; overflow-y:auto;}
+  #history-panel h2 { text-align:center; color:#e6e2ef; margin-bottom:20px; font-weight:normal; letter-spacing:4px;}
+  .history-item { border-bottom:1px dashed #3a3846; padding:15px 0; color:#a6a3b5; font-size:14px; line-height:1.8;}
+  .history-item.unknown { color:#4a4559; }
+  .history-item.secret { text-decoration: line-through; color:#6a5f7a; opacity:0.7; }
+  #close-history { margin:30px auto 0; padding:12px 40px; background:transparent; border:1px solid #4a4559; color:#a6a3b5; cursor:pointer; font-family:inherit;}
+
+  /* 结局文本样式 */
+  .ending-text {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px dashed #3a3846;
+    color: #b4aed0;
+    text-align: center;
+    font-style: italic;
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body class="dream">
+
+<div id="status-tag" style="opacity:0;">[ 状态 ]</div>
+
+<div id="title">
+  <h1>The Pale</h1>
+  <div class="sub">The Grey Interval</div>
+  <div class="quote">「不要让我就这样彻底消散。」<br>「如果可以重来，不必承受这般含冤而死的结局。」</div>
+  <button class="title-btn" id="start-btn">开始旅程</button>
+  <button class="title-btn" id="history-btn">回看历程</button>
+</div>
+
+<div id="tap-hint" class="hidden">
+  <div class="foreshadow">
+    妄想修补他人命运。
+  </div>
+  <div class="pulse">— 点击屏幕继续 —</div>
+</div>
+
+<div id="history-panel">
+  <h2>已解锁的记忆</h2>
+  <div id="history-list"></div>
+  <button id="close-history">关闭</button>
+</div>
+
+<div id="game">
+  <div id="hud">
+    <div class="hud-item" id="hud-btn">查看历程</div>
+    <div class="hud-item" id="hud-home">返回标题页</div>
+  </div>
+  <main id="text-area"></main>
+  <div id="choices"></div>
+</div>
+
+<script>
+/* ==================== 状态 & 本地存档 ==================== */
+let state = {
+  unlockedEndings: {},
+  main1Cleared: false
+};
+
+// 固定5个结局模板（含隐藏真结局伏笔）
+const ALL_ENDINGS = [
+  {key:'end_fire', name:'第一轮：含冤而死（火刑）'},
+  {key:'end_escape', name:'第二轮：假死余生（逃亡）'},
+  {key:'end_fight', name:'第二轮：鱼死网破（私奔反杀）'},
+  {key:'end_hide', name:'第二轮：面具余生（私奔隐瞒）'},
+  {key:'end_true', name:'【已封锁】真结局：灰域归墟（隐藏第五结局）'}
+];
+
+// 读取本地存档
+const saveKey = 'pale_save_data';
+function loadSave(){
+  const data = localStorage.getItem(saveKey);
+  if(data) state.unlockedEndings = JSON.parse(data);
+}
+function saveSave(){
+  localStorage.setItem(saveKey, JSON.stringify(state.unlockedEndings));
+}
+loadSave();
+
+/* ==================== 剧本，严格遵循OC世界观 ==================== */
+const GAME = {
+  start: {
+    bg:'fire', tag:'[ 灰域 · 遗物投影 ] 维多利亚时代',
+    text:`烈焰灼骨，热浪吞噬着我周身的一切。
+
+猩红火舌贪婪舔舐着我的裙摆，一寸寸啃噬肌理，浓烟滚滚灌入肺腑，每一次呼吸都是撕裂般的剧痛。
+
+人群喧嚣鼎沸，恶毒的谩骂铺天盖地而来。
+
+“女巫！烧死她！”
+
+教廷修士肃穆的祷词、市井民众狂热的尖叫、木柴燃烧噼啪炸裂的脆响，交织成一张密不透风的罗网，将我死死困在绝境之中。
+
+我是普丽姆罗丝·格雷，生来便是锦衣玉食的贵族少女，可此刻，我只是一个被污名加冕、静待焚身而亡的囚徒。
+
+莫须有的巫罪，倾覆了我的整个人生。
+
+在火光彻底吞噬我视线的刹那，我拼尽魂魄余温，向苍茫虚无许下最恳切的祈愿——
+
+“不要让我就这样彻底消散。”
+
+“若有重来之机，我绝不承受这般含冤焚身的悲凉结局。”
+
+意识轰然碎裂，属于普丽姆罗丝的一世落幕。`,
+    next:'main1_past1'
+  },
+
+  main1_past1: {
+    bg:'dream', tag:'[ 灰域 · 回溯 ] 必死的宿命',
+    text:`一切回溯至三日前。
+
+我依旧身处这座华丽冰冷的格雷庄园，生于贵族世家，却从未拥有过半分自由。
+
+父母唯利是图，为攀附权贵，决意将我许配给垂垂老矣的世袭伯爵，以家族利益桎梏我的余生。
+
+晚宴落幕的暮色里，素来温雅的骑士执住我的指尖，眼眸盛满温柔恳切的期许。他许诺带我逃离樊笼，约定午夜时分，于庄园后门相会，奔赴无拘无束的自由。
+
+我怀揣微薄的希冀，静静等候逃离的契机。
+
+可命运的罗网早已悄然收紧。
+
+当夜，邻家男爵幼子突发高热，缠绵难愈。我心善恻隐，亲自送去调制的草本药剂，悉心照料，可天意难违，那稚嫩的生命终究悄然凋零。`,
+    next:'main1_past2'
+  },
+
+  main1_past2: {
+    bg:'real', tag:'[ 灰域 · 回溯 ] 指控',
+    text:`悲痛与偏执蒙蔽了男爵的心智，教廷神父更是借机恶意挑唆，颠倒黑白。
+
+一纸虚妄的指控，顷刻传遍整座城镇。
+
+“格雷家的小姐深夜私行，以邪术巫药残害稚童，罪无可赦！”
+
+冰冷的教廷士兵悍然撞开庄园朱门，粗暴地将我拖拽而出，狠狠掼在冰冷刺骨的大理石阶上。
+
+生我养我的父母立在廊下，冷眼旁观，缄默无言，任由污名加身，任由我坠入深渊。
+
+神父高举鎏金十字架，声色厉荏，字字诛心，将莫须有的巫罪，牢牢钉在我的身上。
+
+我跪坐在泥泞寒凉之中，看尽世间凉薄，人心荒芜。`,
+    next:'main1_arrest'
+  },
+
+  main1_arrest: {
+    bg:'real', tag:'[ 灰域 · 回溯 ] 审判',
+    text:`城中广场人声鼎沸，万众瞩目。
+
+高台之上审判官神色肃穆，神父立于身侧，男爵立于人群之中嘶吼控诉，所有人都笃定，我是残害稚童的妖邪女巫。
+
+法槌落下，冰冷的审问响彻四方。
+
+“普丽姆罗丝·格雷，你被指控修习巫术、勾结邪灵、蓄意害命。你可认罪？”`,
+    choices:[
+      {label:'“我无罪！那只是寻常草本汤药，绝非巫术！”', next:'main1_trial_explain'},
+      {label:'垂眸缄默，以沉默应对世间所有污蔑。', next:'main1_trial_silent'}
+    ]
+  },
+
+  main1_trial_explain: {
+    bg:'real', tag:'[ 灰域 · 回溯 ] 徒劳的辩解',
+    text:`我倾尽所有气力，逐条辩驳虚妄罪名。
+
+我细数草药名目，详述煎煮章法，诉说孩童高热的急症模样，字字恳切，句句真实。
+
+可愚昧的盲从、狂热的偏见、刻意的构陷，从不会为真相让步。
+
+男爵怒声斥责，神父高声斥我为魔鬼狡辩，狂热的人群高呼惩凶。
+
+真相淹没在众生的喧嚣里，无人听闻，无人相信。
+
+审判官终是落槌定音，宣判我勾结邪灵，判处火刑。`,
+    next:'main1_fire_fixed'
+  },
+
+  main1_trial_silent: {
+    bg:'real', tag:'[ 灰域 · 回溯 ] 绝望的死寂',
+    text:`历经人心凉薄，世事荒唐，我早已无力辩驳。
+
+我垂眸静坐，一言不发，任由污名缠身，任由命运宰割。
+
+可这份沉默，却被曲解为邪魔的傲慢、妖女的不屑。
+
+神父画十字祈福赎罪，审判官未加半分详查，径直落下判决。
+
+火刑之罚，尘埃落定。
+
+广场之上，万众欢呼，庆贺所谓邪祟伏法。`,
+    next:'main1_fire_fixed'
+  },
+
+  main1_fire_fixed: {
+    bg:'fire', tag:'[ 灰域 · 轮回终末 ] 终末焚身',
+    text:`行刑之日，天色铅灰沉郁，乌云压城，一如我晦暗绝望的命途。
+
+火把递至行刑人手中，星火落地，浸润油脂的干草瞬间燃起灼灼烈火。
+
+轰的一声，烈焰腾空，整座柴笼被赤红火海包裹。
+
+滚烫的热浪扑面而来，火舌攀附而上，舔舐我的衣袍，灼烧我的皮肉。
+
+刺骨的剧痛席卷四肢百骸，我忍不住发出凄厉的悲鸣，浓烟蔽目，视野只剩跳动的赤红炼狱。
+
+疼痛突破生理极限，嘶吼渐渐破碎，只剩残破的喘息。皮肉焦灼的苦涩气味萦绕鼻尖，清晰得令人崩溃。
+
+意识渐渐涣散，赤红褪去，黑暗吞噬一切。
+
+世间喧嚣远去，普丽姆罗丝葬身火海，含冤而终。灵魂的祈愿封存在银梳遗物之中。
+
+<div class="ending-text">【 主线一 · 结局 1/4 】BE · 火刑焚身 | 含冤赴死，湮灭尘埃</div>`,
+    saveEnding: 'end_fire',
+    onEnd: () => { state.main1Cleared = true; state.unlockedEndings['end_fire'] = true; saveSave(); },
+    next: 'eve_wake_up'
+  },
+
+  eve_wake_up:{
+    bg:'apartment', tag:'[ 现实 ] Eve · 苏醒',
+    text:`窒息的灼烧感骤然消散。
+
+我猛地自床上弹坐而起，大口大口喘息。
+
+方才那一段漫长惨烈的一世已经落幕，可属于那段人生的绝大多数记忆被屏障自动抹除。
+
+我是伊芙。
+
+我只余下残留的心悸、深入骨髓的疲惫，还有肌肤之上仿佛真实灼烧过的错觉。我记不清梦里完整的故事，说不清方才我究竟成为了谁。我完全不明白，仅仅只是触碰灰域中的旧物，为什么会承受这一切。
+
+跌撞着扑到镜前，一缕银白毫无征兆地横亘在鬓角。
+
+我不知道这缕白发因何而生，不清楚这是灵魂受损烙印在肉体上的伤痕。只当做是不明缘由的身体异变。
+
+反复的断片睡眠、醒来后挥之不去的陌生痛感，已经搅乱我的生活。我决定前往医院寻求答案。`,
+    next:'drL_file'
+  },
+
+  drL_file:{
+    bg:'apartment', tag:'[ 档案 ] Dr.L 病患记录（对外报告）',
+    text:`<div class="file-card">
+<h3>病患档案【对外·提交给门诊系统】</h3>
+<p>姓名：<span class="highlight">Eve</span></p>
+<p>出生日期：<span class="highlight">2007.06.18</span></p>
+<p>主治医师：Dr. L</p>
+<p>主诉：反复长时异常梦境，醒后躯体残留不明痛感，间断出现毛发局部白化；间断记忆断片。</p>
+<p>影像学检查：大脑部分区域活跃度异常，但<strong>未检出明确器质性病变</strong>。</p>
+<p>临床结论：暂无法确定发病根源，现有医学体系难以解释全部症状，持续随访观察。</p>
+<br>
+<p class="secret-note">——————【以下为医生私人加密手记，不向伊芙本人展示】——————</p>
+<p class="secret-note">私人研究笔记：</p>
+<p class="secret-note">患者存在异常灵魂振动迹象，疑似特殊“光环”效应。光环并非天生，更像是被一件旧遗物的频率锚定，来自一份濒死时刻迸发的强烈祈愿。</p>
+<p class="secret-note">每一次在灰域触碰遗物、扰动既定因果，灵魂就会被频率撕裂损耗。躯体早衰、鬓角白发，正是灵魂磨损向外溢出的具象烙印。</p>
+<p class="secret-note">伊芙本人对此全然无知。她以为自己只是梦境的旁观者，殊不知每一次试图修补悲剧，都在进一步消耗自身灵魂。因果已经缠绕成闭环。</p>
+</div>`,
+    next:'eve_chat_drL'
+  },
+
+  eve_chat_drL:{
+    bg:'apartment', tag:'[ 通讯 ] Eve ↔ Dr.L',
+    text:`<div class="chat-card">
+<div class="chat-title">手机聊天记录</div>
+<div class="msg dr">
+<div class="wrap">
+<div class="name">Dr.L</div>
+<div class="bubble">检查报告我已经看过，从现代医学角度，找不到可以解释你全部症状的病灶。</div>
+</div>
+</div>
+<div class="msg me">
+<div class="wrap">
+<div class="name">Eve</div>
+<div class="bubble">那那些真切的痛感怎么解释？我醒来之后总觉得自己过完了别人的一生，可什么细节都留不住。还有我鬓角突然长出来的白发。</div>
+</div>
+</div>
+<div class="msg dr">
+<div class="wrap">
+<div class="name">Dr.L</div>
+<div class="bubble">我无法给你常规医学的标准答案。如果再次坠入那种异样的梦境，尽量记住你所能捕捉到的碎片，哪怕只是物件、名字、一种情绪。</div>
+</div>
+</div>
+<div class="msg me">
+<div class="wrap">
+<div class="name">Eve</div>
+<div class="bubble">我害怕入睡，可睡意总是不受控制地涌上来。</div>
+</div>
+</div>
+<div class="time">——对话结束。浓重睡意再度席卷伊芙，灵魂再次向灰域坠落——</div>
+</div>`,
+    next: 'm1_sleep_again'
+  },
+
+  m1_sleep_again: {
+    bg:'dream', tag:'[ 灰域轮回 ] 遗物虚空',
+    text:`再次沉入无边无际的灰色夹层。
+
+这里没有日月大地，无数旧物悬浮于虚空。银梳、怀表、褪色信笺、半截残烛。每一件物件都锁着某个人完整的一生。
+
+伊芙的自我意识在此处渐渐消融。
+
+那把维多利亚时代的银梳静静悬浮在近处，它承载普丽姆罗丝临死的祈愿，振动频率正呼唤着我。
+一旦伸手触碰，我便会再度代入那段命运，重新经历她的故事。`,
+    choices:[
+      {label:'伸手执起那柄银梳。', next:'main1_reset'},
+      {label:'探寻深渊深处。（时空屏障未解锁）', next:'deep_abyss_locked'}
+    ]
+  },
+
+  deep_abyss_locked: {
+    bg:'dream', tag:'[ 灰域 ] 深渊闭锁',
+    text:`我迈步走向灰域最深处，染血的残页悬浮于幽暗之中，似藏着最终的真相。
+
+可指尖将触的瞬间，无形时空屏障骤然浮现，将我狠狠弹回。
+
+轮回尚未走完，因果没有收束，我尚且没有触碰终极真相的资格。`,
+    choices:[
+      {label:'折返灰域中心，重新抉择。', next:'m1_sleep_again'}
+    ]
+  },
+
+  main1_reset: {
+    bg:'dream', tag:'[ 第二轮 ] 宿命重选',
+    text:`指尖贴上银梳冰凉的梳齿，遗物的频率席卷过来。
+
+焚身惨死的记忆碎片在意识之中翻涌。我再度消融自我，坠入普丽姆罗丝的命运。
+
+时光倒流，重回命运抉择的午夜，耳畔响起贴身女仆玛丽焦灼恳切的低语。
+
+这一次，轮回给予改写悲剧的机会。只是每一次改动既定过往，代价都会悄悄落回现实里伊芙的灵魂之上。`,
+    next:'main1_choice2'
+  },
+
+  main1_choice2: {
+    bg:'real', tag:'[ 第二轮 ] 二次抉择',
+    text:`子夜更深，月色幽寂，庄园后门风声簌簌。
+
+女仆玛丽早已备好密道，为我规划好了假死脱身的生路，只需纵火掩人耳目，我便可彻底逃离这座囚笼庄园。
+
+而街角暗影之中，昔日许诺带我私奔的骑士驾马等候，车帘轻掀，似是依旧等候我的奔赴。
+
+两条前路，两种人生，由我决断。`,
+    choices:[
+      {label:'依从女仆之计，纵火假死，悄然逃亡。', next:'main1_escape'},
+      {label:'奔赴骑士马车，奔赴许诺的自由。', next:'main1_knight_run'}
+    ]
+  },
+
+  main1_escape: {
+    bg:'real', tag:'[ 第二轮 ] 俗世余生',
+    text:`我换上粗布仆衣，循着隐秘密道，悄然离开了囚禁我半生的格雷庄园。
+
+庄园大火冲天，世人皆信贵族少女普丽姆罗丝葬身火海，过往身份、污名、枷锁，尽数焚于烈火之中。
+
+我远走苏格兰僻静小镇，隐去真名，洗去华贵，做了一名平凡女工。
+
+余生无锦衣玉食，无权贵倾轧，无污名缠身。
+
+虽孤身孤寂，岁岁清寒，却安稳安宁，得一世善终。
+
+<div class="ending-text">【 主线一 · 结局 2/4 】HE · 假死余生 | 挣脱枷锁，安稳度世</div>`,
+    saveEnding: 'end_escape',
+    onEnd: () => { state.main1Cleared = true; state.unlockedEndings['end_escape'] = true; saveSave(); }
+  },
+
+  main1_knight_run: {
+    bg:'real', tag:'[ 第二轮 ] 虚妄情深',
+    text:`我甘愿赌上所有，奔赴骑士的诺言。
+
+马车轱辘碾过夜色，将冰冷的庄园远远抛于身后，我以为自己终于挣脱了家族与宿命的桎梏，奔赴所爱与自由。
+
+可温柔诺言皆是虚妄，深情期许尽是骗局。
+
+短短半月，梦幻破碎。
+
+骑士敛去所有温柔假面，露出贪婪凉薄的本心。他夺走我随身携带的所有珠宝财物，眼底只剩冷漠与算计。
+
+“你当真以为，我会迎娶一位被教廷通缉的巫罪之女？”
+
+他将我狠狠推倒在酒馆冰冷的地面，碾碎我最后一丝天真与期许。`,
+    next:'main1_knight_choice'
+  },
+
+  main1_knight_choice: {
+    bg:'real', tag:'[ 第二轮 ] 绝境取舍',
+    text:`一腔赤诚错付，满心期许成空。
+
+世间温柔皆是假象，人心贪凉，宿命多舛。
+
+绝望席卷周身，泪水哽于喉间，我站在绝境路口，唯有二选。`,
+    choices:[
+      {label:'不甘欺辱，奋力反抗，鱼死网破。', next:'main1_fight_knight'},
+      {label:'隐忍吞泪，伪装示弱，苟活余生。', next:'main1_hide'}
+    ]
+  },
+
+  main1_fight_knight: {
+    bg:'fire', tag:'[ 第二轮 ] 殊死一搏',
+    text:`我不愿忍辱偷生，不甘全盘皆输。
+
+盛怒之下，我抄起身侧酒瓶，狠狠砸向虚伪薄情的骑士。
+
+骗局被戳破，杀意骤然滋生。骑士拔刀相向，冰冷的利刃径直刺穿我的胸膛。
+
+温热的鲜血喷涌而出，生机快速流逝。
+
+这场荒唐的奔赴，终以惨烈的殊死对决落幕。
+
+<div class="ending-text">【 主线一 · 结局 3/4 】BE · 鱼死网破 | 错付深情，惨烈赴亡</div>`,
+    saveEnding: 'end_fight',
+    onEnd: () => { state.main1Cleared = true; state.unlockedEndings['end_fight'] = true; saveSave(); }
+  },
+
+  main1_hide: {
+    bg:'dream', tag:'[ 第二轮 ] 面具浮生',
+    text:`我压下所有悲愤与不甘，咽下满心屈辱，未曾争执，未曾反抗。
+
+大雨滂沱的深夜，我趁隙窃取钱财仓皇逃离，亲手损毁容貌，隐去所有过往痕迹。
+
+从此世间再无贵族普丽姆罗丝，只剩一名默默无闻的缝纫女工。
+
+我戴着温顺隐忍的面具，藏起所有过往伤痕、不甘与赤诚。
+
+岁岁年年，隐忍度日，直至白发苍苍，安然老死。
+
+余生漫长，岁岁皆憾，却也得以善终。
+
+<div class="ending-text">【 主线一 · 结局 4/4 】OE · 面具余生 | 藏尽过往，隐忍浮生</div>`,
+    saveEnding: 'end_hide',
+    onEnd: () => { state.main1Cleared = true; state.unlockedEndings['end_hide'] = true; saveSave(); }
+  }
+};
+
+/* ==================== 游戏引擎逻辑 ==================== */
+const titleScreen = document.getElementById('title');
+const gameScreen = document.getElementById('game');
+const textArea = document.getElementById('text-area');
+const choicesDiv = document.getElementById('choices');
+const statusTag = document.getElementById('status-tag');
+const tapHint = document.getElementById('tap-hint');
+const historyPanel = document.getElementById('history-panel');
+const historyList = document.getElementById('history-list');
+const hudHomeBtn = document.getElementById('hud-home');
+
+let currentBg = 'dream';
+
+// 返回标题页功能
+hudHomeBtn.addEventListener('click', ()=>{
+  gameScreen.classList.remove('active');
+  tapHint.classList.add('hidden');
+  titleScreen.classList.remove('hidden');
+  document.body.className = 'dream';
+  currentBg = 'dream';
+});
+
+// 启动游戏
+document.getElementById('start-btn').addEventListener('click', () => {
+  titleScreen.classList.add('hidden');
+  tapHint.classList.remove('hidden');
+});
+
+tapHint.addEventListener('click', () => {
+  tapHint.classList.add('hidden');
+  gameScreen.classList.add('active');
+  loadNode('start');
+});
+
+// 加载剧情节点
+function loadNode(key) {
+  const node = GAME[key];
+  if (!node) return;
+
+  if (node.onEnd) node.onEnd();
+
+  if (node.bg && node.bg !== currentBg) {
+    document.body.className = node.bg;
+    currentBg = node.bg;
+  }
+
+  if (node.tag) {
+    statusTag.style.opacity = 1;
+    statusTag.innerText = node.tag;
+  } else {
+    statusTag.style.opacity = 0;
+  }
+
+  let htmlText = typeof node.text === 'function' ? node.text() : node.text;
+  htmlText = htmlText.replace(/\n/g, '</p><p>');
+  textArea.innerHTML = `<p>${htmlText}</p>`;
+
+  choicesDiv.innerHTML = '';
+
+  if (node.choices) {
+    const choices = typeof node.choices === 'function' ? node.choices() : node.choices;
+    choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.className = 'choice';
+      btn.innerText = choice.label;
+      btn.onclick = () => {
+        choicesDiv.innerHTML = '';
+        loadNode(choice.next);
+      };
+      choicesDiv.appendChild(btn);
+    });
+  } else if (node.next) {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.innerText = '继续...';
+    btn.onclick = () => {
+      choicesDiv.innerHTML = '';
+      loadNode(node.next);
+    };
+    choicesDiv.appendChild(btn);
+  }
+
+  textArea.scrollTop = textArea.scrollHeight;
+}
+
+// 历程面板：已解锁显示内容、未解锁???、真结局划掉伏笔
+document.getElementById('history-btn').addEventListener('click', openHistory);
+document.getElementById('hud-btn').addEventListener('click', openHistory);
+document.getElementById('close-history').addEventListener('click', () => {
+  historyPanel.style.display = 'none';
+});
+
+function openHistory() {
+  historyList.innerHTML = '';
+  ALL_ENDINGS.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+
+    if(item.key === 'end_true'){
+      div.className += ' secret';
+      div.innerHTML = `<span>[ 5/5 隐藏封印 ]</span> ${item.name}`;
+    }
+    else if(state.unlockedEndings[item.key]){
+      div.innerHTML = `<span>[ 已解锁 ]</span> ${item.name}`;
+    }
+    else{
+      div.className += ' unknown';
+      div.innerHTML = `<span>[ 未解锁 ]</span>？？？`;
+    }
+    historyList.appendChild(div);
+  });
+  historyPanel.style.display = 'flex';
+}
+</script>
+</body>
+</html>
